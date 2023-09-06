@@ -12,9 +12,9 @@ class Template(object):
         super(Template, self).__init__()
         self.args = args
         #sucribir a joy 
-        self.sub = rospy.Subscriber("topic" , Joy, self.callback)
+        self.sub = rospy.Subscriber("/duckiebot/joy" , Joy, self.callback)
         #publicar la intrucciones del control en possible_cmd
-        self.publi = rospy.Publisher("topic", Twist2DStamped, queue_size = "x")
+        self.publi = rospy.Publisher("/duckiebot/wheels_driver_node/car_cmd", Twist2DStamped, queue_size = 8)
         self.twist = Twist2DStamped()
 
 
@@ -22,19 +22,37 @@ class Template(object):
         #self.publi.publish(msg)
 
     def callback(self,msg):
-        a = msg.buttons[]
-        y = msg.axes[]
-        x = msg.axes[]
-        z = msg.axes[]
-
-        print(y, x, z)
-        self.twist.omega = 
-        self.twist.v = 
-
-        if a == 1:
-            self.twist.omega = 
-            self.twist.v = 
+        rt = msg.axes[5]
+        lt = msg.axes[2]
+        l = msg.axes[0]
         
+        x = msg.buttons[2]
+
+
+#        print(y, x, z)
+#        self.twist.omega = 
+#        self.twist.v = 
+
+#        if rt in range(-1,1):
+#           self.twist.omega =
+#            self.twist.v = -rt + 1
+            
+#        if lt in range(-1,1):
+#            self.twist.v = lt - 1
+
+
+	self.twist.v = -lt + rt
+	    
+	
+	if abs(l) >= 0.8:
+	    self.twist.omega = - 10 * l 
+	    
+	
+	if x == 1:
+	    self.twist.omega = 0
+	    self.twist.v = 0    
+	   
+	        
         self.publi.publish(self.twist)
         
 
