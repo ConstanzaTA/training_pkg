@@ -18,8 +18,8 @@ class Template(object):
 		self.Sub_Cam = rospy.Subscriber("/duckiebot/camera_node/image/raw", Image, self.procesar_img)
         #Publicar imagen(es)
 		self.pub_img = rospy.Publisher("camara_pato2", Image, queue_size = 1)
-		self.pub_img = rospy.Publisher("mask", Image, queue_size = 1)
-
+		self.pub_mask = rospy.Publisher("mask", Image, queue_size = 1)
+		self.pub_distancia = rospy.Publisher("distancia", String, queue_size = 1)
 
 	def procesar_img(self, msg):
 		#Transformar Mensaje a Imagen
@@ -39,31 +39,44 @@ class Template(object):
 
 		#Definir rangos para la mascara
 
-		lower_limit = np.array([40 ,80 ,80 ])
+		lower_limit = np.array([20 ,30 ,70 ])
 		upper_limit =np.array([80 ,255 ,255 ])
 
 		#Mascara
 		mask = cv2.inRange(image_out, lower_limit, upper_limit)
 		image_out = cv2.bitwise_and(image, image, mask=mask)
+		msg2 = bridge.cv2_to_imgmsg(image_out, "bgr8")
+		self.pub_mask.publish(msg2)
 
 		# Operaciones morfologicas, normalmente se utiliza para "limpiar" la mascara
 		kernel = np.ones((5 , 5), np.uint8)
-		img_erode = cv2.erode(mask, kernel, iterations=1) #Erosion
-		img_dilate = cv2.dilate(img_erode, kernel, iterations=1) #Dilatar 
-
+		img_erode = cv2.erode(mask, kernel, iterations=5) #Erosion
+		img_dilate = cv2.dilate(img_erode, kernel, iterations=7) #Dilatar 
+		w=0
+		h=0
 		# Definir blobs
 		_,contours, hierarchy = cv2.findContours(img_dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 		for cnt in contours:
 			AREA = cv2.contourArea(cnt)
 			if AREA>200: #Filtrar por tamano de blobs
 				x,y,w,h = cv2.boundingRect(cnt)
-				cv2.rectangle(image, (x,y), (w,h), (0,0,255), 2)
+				cv2.rectangle(image, (x,y), (x+w,y+h), (0,0,255), 2)
+				dist = 'El pato esta a '+str( 264.836/h)+' centimetros.'
+				print(h)
+				print(dist)
+               	 		self.pub_distancia.publish(dist)
 			else:
 				None
 
 		# Publicar imagen final
 		msg = bridge.cv2_to_imgmsg(image, "bgr8")
 		self.pub_img.publish(msg)
+
+		# Calculando distancia
+		#x,y,w,h = cv2.boundingRect(cnt)
+		#print(str(h)+" "+str(w))
+		#dist = 'El pato esta a '+str( 0.02552523*(1/h))+' centimetros.'
+		#self.pub_distancia.publish(dist)
 
 def main():
 	rospy.init_node('test') #creacion y registro del nodo!
