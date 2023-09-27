@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 import rospy #importar ros para python
@@ -7,6 +8,7 @@ from sensor_msgs.msg import Image # importar mensajes de ROS tipo Image
 import cv2 # importar libreria opencv
 from cv_bridge import CvBridge # importar convertidor de formato de imagenes
 import numpy as np # importar libreria numpy
+from duckietown_msgs.msg import Twist2DStamped
 
 
 
@@ -15,12 +17,11 @@ class Template(object):
 		super(Template, self).__init__()
 		self.args = args
 		#Suscribrirse a la camara
-		self.Sub_Cam = rospy.Subscriber("/duckiebot/camera_node/image/raw", Image, self.procesar_img)
-        #Publicar imagen(es)
-		self.pub_img = rospy.Publisher("camara_pato2", Image, queue_size = 1)
-		self.pub_mask = rospy.Publisher("mask", Image, queue_size = 1)
-		self.pub_distancia = rospy.Publisher("distancia", String, queue_size = 1)
+		self.Sub_dist = rospy.Subscriber("/duckiebot/camera_node/image/raw", Image, self.procesar_img)
 
+        #Publicar imagen(es)
+
+ 
 	def procesar_img(self, msg):
 		#Transformar Mensaje a Imagen
 		bridge = CvBridge()
@@ -61,8 +62,11 @@ class Template(object):
 			if AREA>200: #Filtrar por tamano de blobs
 				x,y,w,h = cv2.boundingRect(cnt)
 				cv2.rectangle(image, (x,y), (x+w,y+h), (0,0,255), 2)
-				dist = 'El pato esta a '+str( 264.836/h)+' centimetros.'
-				print(h)
+				z = 264.836/h
+				dist = Point()
+				dist.x = x+w/2
+				dist.y = y+h/2
+				dist.z = z
 				print(dist)
                	 		self.pub_distancia.publish(dist)
 			else:
@@ -71,13 +75,7 @@ class Template(object):
 		# Publicar imagen final
 		msg = bridge.cv2_to_imgmsg(image, "bgr8")
 		self.pub_img.publish(msg)
-
-		# Calculando distancia
-		#x,y,w,h = cv2.boundingRect(cnt)
-		#print(str(h)+" "+str(w))
-		#dist = 'El pato esta a '+str( 0.02552523*(1/h))+' centimetros.'
-		#self.pub_distancia.publish(dist)
-
+		
 def main():
 	rospy.init_node('test') #creacion y registro del nodo!
 
