@@ -19,7 +19,9 @@ class Template(object):
 		#Suscribrirse a la camara
 		self.Sub_dist = rospy.Subscriber("/duckiebot/camera_node/image/raw", Image, self.procesar_img)
 
-        #Publicar imagen(es)
+	        #Publicar imagen(es)
+		self.pub_img = rospy.Publisher("/duckiebot/camera_node/image/camara_pe", Image, queue_size=1)
+		self.pub_mask = rospy.Publisher("/duckiebot/camera_node/image/mask", Image, queue_size=1)
 
  
 	def procesar_img(self, msg):
